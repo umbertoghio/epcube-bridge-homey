@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="/homey.js" data-origin="settings"></script>
+  <title>EP Cube MQTT settings</title>
+</head>
+<body>
+  <header class="homey-header">
+    <h1 class="homey-title">EP Cube MQTT</h1>
+    <p class="homey-subtitle">Connect to the broker used by epcube-bridge. No EP Cube account credentials are needed.</p>
+  </header>
+  <form id="broker-form">
+    <fieldset class="homey-form-fieldset">
+      <legend class="homey-form-legend">MQTT broker</legend>
+      <div class="homey-form-group"><label class="homey-form-label" for="host">Host (without mqtt://)</label><input class="homey-form-input" id="host" required autocomplete="off"></div>
+      <div class="homey-form-group"><label class="homey-form-label" for="port">Port</label><input class="homey-form-input" id="port" type="number" min="1" max="65535" required value="1883"></div>
+      <div class="homey-form-group"><label><input id="tls" type="checkbox"> Use TLS (valid CA certificate required)</label></div>
+      <div class="homey-form-group"><label class="homey-form-label" for="username">Username</label><input class="homey-form-input" id="username" autocomplete="username"></div>
+      <div class="homey-form-group"><label class="homey-form-label" for="password">Password</label><input class="homey-form-input" id="password" type="password" autocomplete="new-password"></div>
+      <div class="homey-form-group"><label class="homey-form-label" for="baseTopic">Base topic</label><input class="homey-form-input" id="baseTopic" value="epcube" required></div>
+    </fieldset>
+    <p id="status" role="status" aria-live="polite"></p>
+    <button class="homey-button-primary-full" id="save" type="submit" disabled>Save settings</button>
+  </form>
+  <script>
+    function onHomeyReady(Homey) {
+      const field = id => document.getElementById(id);
+      Homey.get('broker', (error, saved) => {
+        if (error) { field('status').textContent = 'Could not load settings. Reopen this page.'; Homey.ready(); return; }
+        if (saved) {
+          for (const key of ['host', 'port', 'username', 'password', 'baseTopic']) {
+            if (saved[key] !== undefined) field(key).value = saved[key];
+          }
+          field('tls').checked = saved.tls === true;
+        }
+        field('save').disabled = false;
+        Homey.ready();
+      });
+      field('broker-form').addEventListener('submit', event => {
+        event.preventDefault();
+        const config = {
+          host: field('host').value.trim(), port: Number(field('port').value), tls: field('tls').checked,
+          username: field('username').value, password: field('password').value,
+          baseTopic: field('baseTopic').value.replace(/^\/+|\/+$/g, '')
+        };
+        if (!config.host || /[\s/@?#]/.test(config.host) || config.host.includes('://') ||
+            !Number.isInteger(config.port) || config.port < 1 || config.port > 65535 ||
+            !config.baseTopic || /[+#\0]/.test(config.baseTopic) || config.baseTopic.length > 200) {
+          field('status').textContent = 'Enter a valid host, port and base topic without wildcards.'; return;
+        }
+        field('save').disabled = true;
+        // One atomic settings object avoids reconnecting once per changed field.
+        Homey.set('broker', config, error => {
+          field('save').disabled = false;
+          field('status').textContent = error ? 'Could not save settings.' : 'Saved. The app will reconnect. You can now add your EP Cube device.';
+        });
+      });
+    }
+  </script>
+</body>
+</html>

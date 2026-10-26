@@ -1,0 +1,26 @@
+{
+  "name": "epcube-mqtt-homey",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Read-only EP Cube MQTT integration for Homey Pro",
+  "main": "app.js",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test test/*.test.ts",
+    "validate": "homey app validate --level debug"
+  },
+  "dependencies": {
+    "mqtt": "5.16.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "homey": "3.12.2",
+    "typescript": "^5.9.0",
+    "tsx": "^4.20.0",
+    "@types/homey": "npm:homey-apps-sdk-v3-types@0.3.12"
+  }
+}

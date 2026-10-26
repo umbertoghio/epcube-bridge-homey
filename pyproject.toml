@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "epcube-bridge"
+version = "0.1.0"
+description = "Read-only EP Cube cloud to MQTT and REST bridge"
+license-files = ["THIRD_PARTY_NOTICES.md"]
+requires-python = ">=3.12"
+dependencies = [
+  "httpx>=0.28,<0.29", "aiomqtt>=2.4,<3", "fastapi>=0.115,<1",
+  "uvicorn>=0.34,<1", "pydantic-settings>=2.8,<3", "numpy>=2.2,<3",
+  "Pillow>=11,<13", "pycryptodome>=3.21,<4", "tzdata>=2025.1",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8,<10", "pytest-asyncio>=0.25,<2", "ruff>=0.11,<1"]
+
+[project.scripts]
+epcube-bridge = "epcube_bridge.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "UP"]

@@ -1,0 +1,442 @@
+{
+  "id": "com.epcube.mqtt",
+  "version": "1.0.0",
+  "sdk": 3,
+  "compatibility": ">=12.4.5",
+  "platforms": [
+    "local"
+  ],
+  "name": {
+    "en": "EP Cube MQTT"
+  },
+  "description": {
+    "en": "Monitor your EP Cube battery through a local MQTT bridge"
+  },
+  "category": [
+    "energy"
+  ],
+  "brandColor": "#167D8D",
+  "author": {
+    "name": "EpiHomey"
+  },
+  "permissions": [],
+  "images": {
+    "small": "/assets/images/small.png",
+    "large": "/assets/images/large.png"
+  },
+  "capabilities": {
+    "epcube_mode": {
+      "type": "enum",
+      "title": {
+        "en": "Operating mode"
+      },
+      "getable": true,
+      "setable": false,
+      "uiComponent": "sensor",
+      "values": [
+        {
+          "id": "self_consumption",
+          "title": {
+            "en": "Self-consumption"
+          }
+        },
+        {
+          "id": "time_of_use",
+          "title": {
+            "en": "Time of use"
+          }
+        },
+        {
+          "id": "backup",
+          "title": {
+            "en": "Backup"
+          }
+        },
+        {
+          "id": "unknown",
+          "title": {
+            "en": "Unknown"
+          }
+        }
+      ]
+    }
+  },
+  "drivers": [
+    {
+      "id": "epcube",
+      "name": {
+        "en": "EP Cube battery"
+      },
+      "class": "battery",
+      "connectivity": [
+        "lan"
+      ],
+      "capabilities": [
+        "measure_battery",
+        "measure_power",
+        "measure_power.pv",
+        "measure_power.grid",
+        "measure_power.home",
+        "meter_power.daily_pv",
+        "meter_power.daily_backup",
+        "meter_power.daily_grid_import",
+        "meter_power.daily_grid_export",
+        "meter_power.daily_solar_dc",
+        "meter_power.daily_solar_ac",
+        "meter_power.daily_ev",
+        "epcube_mode"
+      ],
+      "capabilitiesOptions": {
+        "measure_power": {
+          "title": {
+            "en": "Battery power"
+          },
+          "min": -1000000,
+          "max": 1000000,
+          "approximated": true
+        },
+        "measure_power.pv": {
+          "title": {
+            "en": "PV power"
+          }
+        },
+        "measure_power.grid": {
+          "title": {
+            "en": "Grid power"
+          },
+          "min": -1000000,
+          "max": 1000000
+        },
+        "measure_power.home": {
+          "title": {
+            "en": "Home power"
+          }
+        },
+        "meter_power.daily_pv": {
+          "title": {
+            "en": "Solar today"
+          },
+          "decimals": 3
+        },
+        "meter_power.daily_backup": {
+          "title": {
+            "en": "Backup load today"
+          },
+          "decimals": 3
+        },
+        "meter_power.daily_grid_import": {
+          "title": {
+            "en": "Grid import today"
+          },
+          "decimals": 3
+        },
+        "meter_power.daily_grid_export": {
+          "title": {
+            "en": "Grid export today"
+          },
+          "decimals": 3
+        },
+        "meter_power.daily_solar_dc": {
+          "title": {
+            "en": "Solar DC today"
+          },
+          "decimals": 3
+        },
+        "meter_power.daily_solar_ac": {
+          "title": {
+            "en": "Solar AC today"
+          },
+          "decimals": 3
+        },
+        "meter_power.daily_ev": {
+          "title": {
+            "en": "EV energy today"
+          },
+          "decimals": 3
+        }
+      },
+      "energy": {
+        "homeBattery": true
+      },
+      "images": {
+        "small": "/assets/images/small.png",
+        "large": "/assets/images/large.png"
+      },
+      "pair": [
+        {
+          "id": "list_devices",
+          "template": "list_devices",
+          "navigation": {
+            "next": "add_devices"
+          }
+        },
+        {
+          "id": "add_devices",
+          "template": "add_devices"
+        }
+      ]
+    }
+  ],
+  "flow": {
+    "triggers": [
+      {
+        "id": "soc_below",
+        "title": {
+          "en": "SOC dropped below"
+        },
+        "titleFormatted": {
+          "en": "SOC dropped below [[threshold]] %"
+        },
+        "hint": {
+          "en": "Runs only when a fresh reading crosses the threshold, not on startup or reconnection."
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=epcube"
+          },
+          {
+            "type": "number",
+            "name": "threshold",
+            "title": {
+              "en": "SOC (%)"
+            },
+            "min": 0,
+            "max": 100,
+            "step": 1
+          }
+        ],
+        "tokens": [
+          {
+            "name": "soc",
+            "type": "number",
+            "title": {
+              "en": "SOC (%)"
+            }
+          }
+        ]
+      },
+      {
+        "id": "soc_above",
+        "title": {
+          "en": "SOC rose above"
+        },
+        "titleFormatted": {
+          "en": "SOC rose above [[threshold]] %"
+        },
+        "hint": {
+          "en": "Runs only when a fresh reading crosses the threshold, not on startup or reconnection."
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=epcube"
+          },
+          {
+            "type": "number",
+            "name": "threshold",
+            "title": {
+              "en": "SOC (%)"
+            },
+            "min": 0,
+            "max": 100,
+            "step": 1
+          }
+        ],
+        "tokens": [
+          {
+            "name": "soc",
+            "type": "number",
+            "title": {
+              "en": "SOC (%)"
+            }
+          }
+        ]
+      },
+      {
+        "id": "grid_import_above",
+        "title": {
+          "en": "Grid import rose above"
+        },
+        "titleFormatted": {
+          "en": "Grid import rose above [[threshold]] W"
+        },
+        "hint": {
+          "en": "Runs only when a fresh reading crosses the threshold, not on startup or reconnection."
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=epcube"
+          },
+          {
+            "type": "number",
+            "name": "threshold",
+            "title": {
+              "en": "Power (W)"
+            },
+            "min": 0,
+            "max": 1000000,
+            "step": 1
+          }
+        ],
+        "tokens": [
+          {
+            "name": "power",
+            "type": "number",
+            "title": {
+              "en": "Power (W)"
+            }
+          }
+        ]
+      },
+      {
+        "id": "grid_export_above",
+        "title": {
+          "en": "Grid export rose above"
+        },
+        "titleFormatted": {
+          "en": "Grid export rose above [[threshold]] W"
+        },
+        "hint": {
+          "en": "Runs only when a fresh reading crosses the threshold, not on startup or reconnection."
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=epcube"
+          },
+          {
+            "type": "number",
+            "name": "threshold",
+            "title": {
+              "en": "Power (W)"
+            },
+            "min": 0,
+            "max": 1000000,
+            "step": 1
+          }
+        ],
+        "tokens": [
+          {
+            "name": "power",
+            "type": "number",
+            "title": {
+              "en": "Power (W)"
+            }
+          }
+        ]
+      },
+      {
+        "id": "mode_changed",
+        "title": {
+          "en": "Operating mode changed"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=epcube"
+          }
+        ],
+        "tokens": [
+          {
+            "name": "mode",
+            "type": "string",
+            "title": {
+              "en": "Operating mode"
+            }
+          },
+          {
+            "name": "previous_mode",
+            "type": "string",
+            "title": {
+              "en": "Previous mode"
+            }
+          }
+        ]
+      }
+    ],
+    "conditions": [
+      {
+        "id": "soc_is_above",
+        "title": {
+          "en": "SOC is above"
+        },
+        "titleFormatted": {
+          "en": "SOC is above [[threshold]] %"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=epcube"
+          },
+          {
+            "type": "number",
+            "name": "threshold",
+            "title": {
+              "en": "SOC (%)"
+            },
+            "min": 0,
+            "max": 100,
+            "step": 1
+          }
+        ]
+      },
+      {
+        "id": "mode_is",
+        "title": {
+          "en": "Operating mode is"
+        },
+        "titleFormatted": {
+          "en": "Operating mode is [[mode]]"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=epcube"
+          },
+          {
+            "type": "dropdown",
+            "name": "mode",
+            "title": {
+              "en": "Operating mode"
+            },
+            "values": [
+              {
+                "id": "self_consumption",
+                "title": {
+                  "en": "Self-consumption"
+                }
+              },
+              {
+                "id": "time_of_use",
+                "title": {
+                  "en": "Time of use"
+                }
+              },
+              {
+                "id": "backup",
+                "title": {
+                  "en": "Backup"
+                }
+              },
+              {
+                "id": "unknown",
+                "title": {
+                  "en": "Unknown"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
