@@ -11,10 +11,14 @@ def test_environment_only(monkeypatch):
         "MQTT_HOST": "broker",
         "API_TOKEN": "private",
         "MQTT_TLS": "true",
+        "WEB_DISABLE_AUTH": "true",
+        "WEATHER_LOCATION": "Borgo San Dalmazzo",
         "EPCUBE_TIMEZONE": "Europe/Rome",
     }.items():
         monkeypatch.setenv(key, value)
     settings = Settings()
+    assert settings.weather_location == "Borgo San Dalmazzo"
+    assert settings.web_disable_auth
     assert settings.mqtt_tls
     assert settings.poll_interval_s == 30
     assert settings.enable_controls is False

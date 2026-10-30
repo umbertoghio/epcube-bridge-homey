@@ -25,6 +25,8 @@ services:
       MQTT_TLS: ${MQTT_TLS:-false}
       MQTT_BASE_TOPIC: ${MQTT_BASE_TOPIC:-epcube}
       API_TOKEN: ${API_TOKEN:?Set API_TOKEN}
+      WEATHER_LOCATION: ${WEATHER_LOCATION:-}
+      WEB_DISABLE_AUTH: ${WEB_DISABLE_AUTH:-false}
       ENABLE_CONTROLS: ${ENABLE_CONTROLS:-false}
 volumes:
   epcube-data:

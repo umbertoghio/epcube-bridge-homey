@@ -46,6 +46,8 @@ One bridge instance per account/topic is supported. Do not run multiple replicas
 | `MQTT_TLS` | `false` | Enable TLS with CA and hostname verification; never uses insecure verification |
 | `MQTT_BASE_TOPIC` | `epcube` | Topic prefix; MQTT wildcards and NUL are rejected |
 | `API_TOKEN` | Required | Nonempty REST bearer token; use a long random secret |
+| `WEATHER_LOCATION` | Empty (disabled) | Location for optional Open-Meteo weather, e.g. `Borgo San Dalmazzo` |
+| `WEB_DISABLE_AUTH` | `false` | Skip dashboard authentication for trusted local access; REST remains protected |
 | `ENABLE_CONTROLS` | `false` | Reserved; true emits a warning and still exposes no writes |
 
 ## Authentication and failure handling
@@ -128,6 +130,60 @@ Example `epcube/123/state`:
 
 Here the battery supplies 800 W, the PV supplies 1200 W, the home uses 1800 W, and 200 W is exported. `daily_energy_timestamp` is the rollup fetch time; solar DC/AC and EV counters instead arrive with live telemetry and reset on the cube's own clock. Set `EPCUBE_TIMEZONE` to match the installation to avoid querying the wrong calendar day around midnight. The cloud's timezone/DST accounting is not independently verified.
 
+## Local dashboard
+
+Open **http://127.0.0.1:8080/** and enter your `API_TOKEN`. The responsive dashboard shows grid import/export, solar generation, battery charge/discharge, home consumption and SOC, with a power-flow diagram inspired by the EP Cube app. The compact live power-flow panel places grid and solar on the left, battery in the centre, and home on the right. A separate Today panel shows solar production, grid import, grid export and estimated home consumption in kWh. The Last 24 hours panel plots battery SOC (%) and solar/home power (kW), with a touch-friendly slider to inspect individual readings.
+
+The dashboard uses a compact two-column layout on landscape tablets, with connection status and update time in the footer. On narrower screens the cards stack vertically.
+
+The page fetches the existing REST snapshot every five seconds while visible, with backoff on failures. It adds no cloud requests. Last readings remain visible but are marked stale during outages. Missing values appear as dashes. The cloud does not provide a verified whole-home daily counter. Home consumption is therefore estimated by trapezoidal integration of recorded `home_power` samples since local midnight. The ≈ marker and recorded percentage remain visible: gaps, missing/negative readings, initial setup and outages reduce coverage and are never extrapolated. At least two valid readings are needed. On a 25-hour DST day the 24-hour retention can leave the first hour uncovered. This estimate is not substituted with backup-load counters. Stored battery kWh and weather are not estimated.
+
+The dashboard saves a successfully accepted token in browser local storage and reconnects automatically after reloads. **Lock** removes the saved token; a rejected token is also removed. If browser storage is blocked, login still works for the current tab. Tokens are never placed in URLs.
+
+For trusted local access, set `WEB_DISABLE_AUTH=true` in `.env` and recreate the container with `docker compose up -d --build`. The page then opens directly without requesting or sending a token. This exposes dashboard readings at `/web/devices`, `/web/devices/{id}/state` and `/web/devices/{id}/history` to anyone who can reach the server. The original `/devices` and `/devices/{id}/state` REST endpoints still require `API_TOKEN`, which remains required configuration. Authentication defaults to enabled. Keep the example loopback binding for local-only access.
+
+The empty page shell (`/`), its fixed `/assets/` files and `/health` are public in either mode. Use HTTPS through a reverse proxy when accessing outside a trusted local connection.
+
+[Portrait preview with synthetic data](docs/history-portrait-preview.png) · [Landscape preview](docs/history-landscape-preview.png).
+
+## Optional weather
+
+Set `WEATHER_LOCATION=Borgo San Dalmazzo` in `.env` and recreate the container to enable the weather icon and temperature. Leave it empty to disable external weather calls. For ambiguous names, append the country, e.g. `Borgo San Dalmazzo, Italy`. The first geocoding match is used; its resolved name is shown in the icon tooltip/accessibility label.
+
+Weather is provided by [Open-Meteo](https://open-meteo.com/en/docs), using its [geocoding API](https://open-meteo.com/en/docs/geocoding-api) and current model-based conditions. The server contacts these services only when the dashboard requests weather; the location/coordinates are sent to Open-Meteo, never EP Cube credentials. Cache and failure retry are shared across browsers and limited to once per 15 minutes. Failed refreshes preserve the last result marked stale; missing results display unavailable. The icon links to the provider for attribution. The public Open-Meteo service is intended for non-commercial usage; see its [terms](https://open-meteo.com/en/terms).
+
+`GET /weather` requires the REST token. `/web/weather` follows `WEB_DISABLE_AUTH`, like the other dashboard reads. Weather does not change cloud polling or MQTT payloads. The preview uses synthetic weather, not current conditions in Borgo San Dalmazzo.
+
+## Rolling 24-hour history
+
+Every successful cloud poll records `soc`, `pv_power` and `home_power` with its UTC sample timestamp in **`/data/history.sqlite3`**. This uses the existing Docker volume and Python's SQLite library; no extra service or environment variable is required. History survives container restarts/rebuilds when the volume is retained. There is no backfill: after first deployment it builds up gradually over 24 hours. MQTT topics and live REST payloads are unchanged.
+
+The database separates account/region and device histories. Reads return the trailing 24 hours only; older records are deleted on the next successful database read or append. SQLite reuses freed pages, so the file need not shrink after deletion. No credentials are stored in this database. Collection runs without a browser open and makes no additional cloud requests. Disk errors do not interrupt live polling/MQTT; the history response reports a recording failure or returns 503 when storage cannot be read.
+
+Authenticated `GET /devices/{id}/history` returns:
+
+```json
+{
+  "device_id": "123",
+  "start": "2026-10-29T10:00:00+00:00",
+  "end": "2026-10-30T10:00:00+00:00",
+  "timezone": "Europe/Rome",
+  "gap_threshold_s": 90,
+  "recording_available": true,
+  "points": [
+    {"timestamp": "2026-10-30T09:59:30+00:00", "soc": 31.0, "pv_power": 1920.0, "home_power": 430.0}
+  ]
+}
+```
+
+History responses also contain `today_home` with `energy_kwh` (nullable), `estimated: true` and `coverage_percent`, calculated in `EPCUBE_TIMEZONE`.
+
+The dashboard uses `/web/devices/{id}/history`, subject to `WEB_DISABLE_AUTH` like its other data routes. History refreshes at most once per minute while live state refreshes every five seconds. Charts use the configured installation timezone (including DST), preserve null readings, and break lines across intervals longer than `max(90 seconds, 3 × POLL_INTERVAL_S)`. They never replace missing data with zero. SOC has its own % axis; solar and home power share a kW axis. A historical chart remains visible and is explicitly marked when its refresh fails. After a bridge restart, device discovery must succeed before its history can be requested through the API.
+
+## Homey Pro app
+
+The SDK v3 TypeScript app lives in [homey-epcube-mqtt](homey-epcube-mqtt/README.md). It discovers bridge devices over MQTT, displays power and energy, and provides SOC, mode and grid Flow cards. Follow its README for `homey app install`, broker settings and Homey Energy limitations.
+
 ## REST API
 
 No write endpoints, Swagger UI or unauthenticated OpenAPI schema are registered.
@@ -155,6 +211,7 @@ pip install -c constraints.txt -e '.[test]'
 pytest -q
 ruff check src tests
 ruff format --check src tests
+node --test tests/web/*.test.mjs
 ```
 
 `constraints.txt` records the versions used for validation and is used by Docker builds. For a native run, export the environment variables and ensure `/data` exists and is writable by the runtime user, then run `epcube-bridge`. Run one process/worker only; the executable starts a single Uvicorn worker.

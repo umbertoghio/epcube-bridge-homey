@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101413">
+  <title>EP Cube · Energy at home</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/assets/dashboard.css">
+  <script src="/assets/dashboard.js" type="module"></script>
+</head>
+<body data-auth-required="true">
+  <svg class="icon-library" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="grid-icon" viewBox="0 0 48 48"><path d="M20 5h8l8 38H12L20 5ZM9 15h30M6 25h36M5 43h38M14 34l20-9-18-10M34 34l-20-9 18-10"/></symbol>
+    <symbol id="solar-icon" viewBox="0 0 48 48"><path d="M8 10h32l4 26H4l4-26ZM12 18h25M10 27h29M18 12l-2 22M30 12l2 22M24 36v7M12 43h24"/></symbol>
+    <symbol id="home-icon" viewBox="0 0 48 48"><path d="m5 23 19-16 19 16M10 20v22h28V20M20 42V29h8v13"/></symbol>
+    <symbol id="battery-icon" viewBox="0 0 48 48"><rect x="12" y="8" width="24" height="35" rx="4"/><path d="M19 8V4h10v4M26 16l-7 11h6l-3 9 8-12h-6l2-8Z"/></symbol>
+    <symbol id="arrow-icon" viewBox="0 0 24 24"><path d="M5 12h14m-5-5 5 5-5 5"/></symbol>
+    <symbol id="lock-icon" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></symbol>
+  </svg>
+  <main>
+    <section id="login-panel" class="login-panel" aria-labelledby="login-title">
+      <div class="login-art"><svg><use href="#battery-icon"/></svg></div>
+      <p class="eyebrow">YOUR HOME, IN BALANCE</p>
+      <h1 id="login-title">A little more<br>energy awareness.</h1>
+      <p class="login-description">See what your home is generating, using and storing.<br>Connect with your bridge API token to get started.</p>
+      <form id="login-form">
+        <label for="api-token">API token</label>
+        <div class="token-field"><svg><use href="#lock-icon"/></svg><input id="api-token" type="password" required autocomplete="off" spellcheck="false" placeholder="Enter your API_TOKEN"><button id="connect" type="submit">Connect <span aria-hidden="true">↗</span></button></div>
+        <p id="login-error" class="error" role="alert"></p>
+      </form>
+      <p class="privacy-note">Your token is saved in this browser. Use Lock to forget it.</p>
+    </section>
+    <section id="dashboard" hidden aria-label="Energy dashboard">
+      <div id="notice" class="notice" role="status" hidden></div>
+      <div class="dashboard-grid">
+        <section class="flow-panel" aria-label="Live power flow">
+          <div class="flow-diagram" id="flow-diagram" aria-label="Power exchanged between grid, solar, battery and home">
+            <svg class="connections" viewBox="0 0 600 300" preserveAspectRatio="none" aria-hidden="true">
+              <path class="track" d="M110 76H170Q190 76 190 96V130Q190 150 210 150H240"/><path id="grid-flow" class="flow-line" d="M110 76H170Q190 76 190 96V130Q190 150 210 150H240"/>
+              <path class="track" d="M110 224H170Q190 224 190 204V170Q190 150 210 150H240"/><path id="solar-flow" class="flow-line" d="M110 224H170Q190 224 190 204V170Q190 150 210 150H240"/>
+              <path class="track" d="M360 150H490"/><path id="home-flow" class="flow-line" d="M360 150H490"/>
+            </svg>
+            <div class="flow-node grid-node"><strong id="grid-value">—</strong><span class="node-title">Grid</span><div class="node-icon"><svg><use href="#grid-icon"/></svg></div><span id="grid-direction" class="direction">Waiting</span></div>
+            <div class="flow-node solar-node"><strong id="solar-value">—</strong><span class="node-title">Solar</span><div class="node-icon"><svg><use href="#solar-icon"/></svg></div><span id="solar-direction" class="direction">Generation</span></div>
+            <div class="battery-node"><svg class="soc-ring" viewBox="0 0 200 200" aria-hidden="true"><circle class="ring-track" cx="100" cy="100" r="95"/><circle id="soc-ring" class="ring-fill" cx="100" cy="100" r="95" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"/></svg><span class="battery-label">EP CUBE</span><strong id="soc">—<small>%</small></strong><span id="battery-value">—</span><span id="battery-direction" class="direction">Battery</span></div>
+            <div class="flow-node home-node"><div class="node-icon"><svg><use href="#home-icon"/></svg></div><span id="home-label" class="node-title">Home</span><strong id="home-value">—</strong></div>
+          </div>
+        </section>
+        <aside class="overview-panel" aria-label="Today and history">
+          <section class="today-card" aria-labelledby="today-title">
+            <div class="card-heading"><h2 id="today-title">Today</h2><div class="today-meta"><span id="day-label">—</span><a id="weather" href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer" hidden><span id="weather-icon" aria-hidden="true"></span><span id="weather-text"></span><span class="weather-credit">Open-Meteo</span></a></div></div>
+            <div class="today-metrics">
+              <div><span>Solar production</span><strong id="daily-solar">—</strong><small>kWh generated</small></div>
+              <div><span>Grid import</span><strong id="daily-import">—</strong><small>kWh from grid</small></div>
+              <div><span>Grid export</span><strong id="daily-export">—</strong><small>kWh to grid</small></div>
+              <div><span>Home consumption</span><strong id="daily-home">—</strong><small id="daily-home-note">Estimate · waiting for history</small></div>
+            </div>
+          </section>
+          <section class="history-card" aria-label="Last 24 hours">
+            <p id="history-status" role="status" hidden></p>
+            <div class="chart-heading"><h3>Battery state of charge</h3><span>%</span></div>
+            <svg id="soc-chart" class="history-chart" role="img" aria-label="Battery state of charge during the last 24 hours"></svg>
+            <div class="chart-heading"><h3>Solar &amp; home</h3><span>kW</span></div>
+            <div class="chart-legend"><span class="legend-solar">Solar production</span><span class="legend-home">Home consumption</span></div>
+            <svg id="power-chart" class="history-chart" role="img" aria-label="Solar production and home consumption during the last 24 hours"></svg>
+            <div class="history-inspect" hidden id="history-inspect"><label for="history-sample">Explore readings</label><input id="history-sample" type="range" min="0" max="0" value="0" aria-label="Choose a historical reading"><output id="history-reading" for="history-sample"></output></div>
+          </section>
+        </aside>
+      </div>
+      <footer class="page-footer">
+        <div class="footer-live"><span id="status" class="status waiting" role="status">Connecting</span><span id="updated">Waiting for a sample</span><span id="device-label">Connecting to your EP Cube</span></div>
+        <div class="footer-details"><span id="rollup-note">Daily energy updates every five minutes</span><button id="logout" class="quiet-button" hidden><svg><use href="#lock-icon"/></svg>Lock</button></div>
+      </footer>
+    </section>
+  </main>
+</body>
+</html>

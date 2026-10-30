@@ -9,6 +9,7 @@ from zoneinfo import ZoneInfo
 from .cloud import Cloud
 from .config import Settings
 from .errors import BridgeError
+from .history import History
 from .state import Snapshot, normalize
 
 LOG = logging.getLogger(__name__)
@@ -28,6 +29,8 @@ class Runtime:
     mqtt_connected: bool = False
     last_success: float | None = None
     cloud_error: str | None = None
+    history: History | None = None
+    history_error: bool = False
     changed: asyncio.Event = field(default_factory=asyncio.Event)
 
     def available(self, interval: float) -> bool:
@@ -88,6 +91,15 @@ class Poller:
         self.runtime.cloud_online = True
         self.runtime.cloud_error = None
         self.runtime.changed.set()
+
+        if self.runtime.history is not None:
+            try:
+                await asyncio.to_thread(self.runtime.history.append, snapshot)
+                self.runtime.history_error = False
+            except Exception:
+                # Disk failures must not invalidate live telemetry or expose paths/credentials.
+                self.runtime.history_error = True
+                LOG.warning("History persistence failed")
 
     async def run(self):
         failures = 0

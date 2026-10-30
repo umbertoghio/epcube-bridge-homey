@@ -10,3 +10,5 @@ data
 **/*.egg-info
 build
 dist
+
+homey-epcube-mqtt/

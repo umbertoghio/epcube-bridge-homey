@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     mqtt_tls: bool = False
     mqtt_base_topic: str = "epcube"
     api_token: SecretStr
+    weather_location: str = Field(default="", max_length=120)
+    web_disable_auth: bool = False
     enable_controls: bool = False  # Reserved; never installs write routes.
 
     @field_validator("epcube_email", "epcube_password", "api_token")
